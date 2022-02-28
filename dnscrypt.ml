@@ -357,7 +357,7 @@ let fetch_and_parse_cert ~rand ~udp address port ~provider_name ~public_key =
   let dns_query = Cstruct.to_string buffer in
 
   (* let udp_start = Unix.gettimeofday () in *)
-  let response = udp ~timeout:10. address port dns_query in
+  let response = udp address port dns_query in
   (* let udp_end = Unix.gettimeofday () in *)
   (* Printf.eprintf "UDP query took %.01f ms\n%!" ((udp_end -. udp_start) *. 1000.); *)
 
@@ -479,7 +479,7 @@ let resolve ~rand ~udp ~address ~port cert dns_query =
     ]
   in
 
-  let* response = match udp ~timeout:10. address port query with Ok _ | Error (`No_connection | `Timeout | `Truncated) as x -> x in
+  let* response = match udp address port query with Ok _ | Error (`No_connection | `Timeout | `Truncated) as x -> x in
 
   (* angstrom or better error handling *)
   let resolver_magic = String.sub response 0 8 in

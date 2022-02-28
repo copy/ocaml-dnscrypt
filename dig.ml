@@ -42,7 +42,7 @@ let udp ?timeout ?(response_buffer_size=64*1024) addr port packet =
       Error `Truncated
     else
       Ok (Bytes.sub_string buffer 0 read)
-let udp ~timeout = udp ~timeout ?response_buffer_size:None
+let udp = udp ~timeout:10. ?response_buffer_size:None
 
 let main host_to_resolve dns_type =
   let server_address, server_port, public_key, provider_name = server in

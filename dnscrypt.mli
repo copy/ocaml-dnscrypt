@@ -40,12 +40,12 @@ type fetch_error = [
 
 val fetch_and_parse_cert :
   rand:(int -> bytes) ->
-  udp:(timeout:float -> 'addr -> int -> string -> (string, [`No_connection | `Timeout | `Truncated ]) result) ->
+  udp:('addr -> int -> string -> (string, [`No_connection | `Timeout | `Truncated ]) result) ->
   'addr ->
   int ->
   provider_name:string ->
   public_key:string ->
-  ((cert, cert_error) result list, fetch_error) result
+  ((cert, [>cert_error]) result list, [>fetch_error]) result
 
 type resolve_error = [
   | `Bad_padding
@@ -58,12 +58,12 @@ type resolve_error = [
 
 val resolve :
   rand:(int -> bytes) ->
-  udp:(timeout:float -> 'addr -> int -> string -> (string, [< `No_connection | `Timeout | `Truncated ]) result) ->
+  udp:('addr -> int -> string -> (string, [< `No_connection | `Timeout | `Truncated ]) result) ->
   address:'addr ->
   port:int ->
   cert ->
   string ->
-  (Dns.Packet.t, resolve_error) result
+  (Dns.Packet.t, [>resolve_error]) result
 
 type error = [resolve_error | fetch_error | cert_error]
 val show_error : error -> string
