@@ -4,5 +4,4 @@
  (libraries cstruct)
  (foreign_stubs
   (language c)
-  (names tweetnacl_stubs tweetnacl)
-  (flags)))
+  (names tweetnacl_stubs tweetnacl)))
