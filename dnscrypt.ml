@@ -89,13 +89,6 @@ let of_hex s =
   in
   buffer
 
-let hex s =
-  let b = Buffer.create (2 * String.length s) in
-  String.iter begin fun c ->
-    Buffer.add_string b @@ Printf.sprintf "%02x" @@ Char.code c
-  end s;
-  Buffer.contents b
-
 module type Crypto = sig
   val create_shared_key : public_key:string -> private_key:string -> string
   val encrypt : shared_key:string -> nonce:string -> message:string -> string
