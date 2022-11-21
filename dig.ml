@@ -1,17 +1,4 @@
-let _server =
-  "sdns://AQIAAAAAAAAADTIwOS41OC4xNDcuMzYgMTNyrVlWMsJBa4cvCY-FG925ZShMbL6aTxkJZDDbqVoeMi5kbnNjcnlwdC1jZXJ0LmNyeXB0b3N0b3JtLmlz"
-  |> Dnscrypt.parse_sdns
-  |> function
-  | Ok DnsCrypt { addr; port; public_key; provider_name; props = _ }->
-    (addr, port, public_key, provider_name)
-  | _ ->
-    failwith "Not a dnscrypt server"
-(* let server = ("5.1.66.255", 8443, "\007\208z\241\207\220]\153v\157?\002f\144\167\004Ie\194t'ly\028\174\245\174\243\185\012F\250", "2.dnscrypt-cert.ffmuc.net") *)
-let server = ("9.9.9.10", 8443, "g\200G\184\200u\140\209 $UC\190ugF\2234\223\029\132\192\011\140G\003h\223\130\029\134>", "2.dnscrypt-cert.quad9.net")
-(* let server = ("77.88.8.78", 15353, "\211\132\192q\201\247Fb\175*\204\213{]\204\151\020\212\007\182\1736\001\225\174\220\006\213mIc'", "2.dnscrypt-cert.browser.yandex.net") *)
-(* let server = ("162.221.207.228", 443, "13r\173YV2\194Ak\135/\t\143\133\027\221\185e(Ll\190\154O\025\td0\219\169Z", "2.dnscrypt-cert.cryptostorm.is") *)
-(* let server = ("23.19.67.116", 443, "13r\173YV2\194Ak\135/\t\143\133\027\221\185e(Ll\190\154O\025\td0\219\169Z", "2.dnscrypt-cert.cryptostorm.is") *)
-(* let server = ("64.42.181.227", 443, "13r\173YV2\194Ak\135/\t\143\133\027\221\185e(Ll\190\154O\025\td0\219\169Z", "2.dnscrypt-cert.cryptostorm.is") *)
+let default_server = ("9.9.9.10", 8443, "g\200G\184\200u\140\209 $UC\190ugF\2234\223\029\132\192\011\140G\003h\223\130\029\134>", "2.dnscrypt-cert.quad9.net")
 
 let rand length =
   let f = Unix.openfile "/dev/urandom" [] 0 in
@@ -44,7 +31,7 @@ let udp ?timeout ?(response_buffer_size=64*1024) addr port packet =
       Ok (Bytes.sub_string buffer 0 read)
 let udp = udp ~timeout:10. ?response_buffer_size:None
 
-let main host_to_resolve dns_type =
+let main server host_to_resolve dns_type =
   let server_address, server_port, public_key, provider_name = server in
   Printf.eprintf "Server: (%S, %d, %S, %S)\n%!" server_address server_port public_key provider_name;
   let server_address = Unix.inet_addr_of_string server_address in
@@ -86,16 +73,30 @@ let main host_to_resolve dns_type =
         print_endline @@ Fmt.to_to_string Dns.Packet.pp dns_response
 
 let () =
+  let bad_args msg = Printf.kprintf (fun msg -> prerr_endline msg; exit 1) msg in
   Printexc.record_backtrace true;
-  match Sys.argv |> Array.to_list |> List.tl with
-  | [host] | [host; "a"] ->
-    main host (`K (Dns.Rr_map.K Dns.Rr_map.A))
-  | [host; "aaaa"] ->
-    main host (`K (Dns.Rr_map.K Dns.Rr_map.Aaaa))
-  | [host; "cname"] ->
-    main host (`K (Dns.Rr_map.K Dns.Rr_map.Cname))
-  | [host; "any"] ->
-    main host `Any
-  | _ ->
-    prerr_endline "Usage: dig host [a|aaaa|cname|any]";
-    exit 1
+  let args = Sys.argv |> Array.to_list |> List.tl in
+  let server, args =
+    match args with
+    | x :: rest when String.starts_with ~prefix:"sdns:" x ->
+      (match Dnscrypt.parse_sdns x with
+       | Ok DnsCrypt { addr; port; public_key; provider_name; props = _ } ->
+         (addr, port, public_key, provider_name)
+       | Ok sdns -> bad_args "Expected DnsCrypt server, got: %s" (Dnscrypt.show_sdns sdns)
+       | Error e -> bad_args "Failed to parse sdns: %s" (Dnscrypt.show_error e)
+      ), rest
+    | args -> default_server, args
+  in
+  let host, dns_type =
+  match args with
+    | [host] | [host; "a"] ->
+      host, (`K (Dns.Rr_map.K Dns.Rr_map.A))
+    | [host; "aaaa"] ->
+      host, (`K (Dns.Rr_map.K Dns.Rr_map.Aaaa))
+    | [host; "cname"] ->
+      host, (`K (Dns.Rr_map.K Dns.Rr_map.Cname))
+    | [host; "any"] ->
+      host, `Any
+    | _ -> bad_args "Usage: dig [sdns://...] host [a|aaaa|cname|any]"
+  in
+  main server host dns_type

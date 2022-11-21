@@ -508,7 +508,7 @@ let resolve ~rand ~udp ~address ~port cert dns_query =
       );
       Ok dns_response
 
-type error = [resolve_error | fetch_error | cert_error]
+type error = [parse_sdns_error | resolve_error | fetch_error | cert_error]
 
 let show_error = function
   | `Invalid_prefix -> "Invalid prefix"

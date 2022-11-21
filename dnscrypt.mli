@@ -65,5 +65,5 @@ val resolve :
   string ->
   (Dns.Packet.t, [>resolve_error]) result
 
-type error = [resolve_error | fetch_error | cert_error]
-val show_error : error -> string
+type error = [parse_sdns_error | resolve_error | fetch_error | cert_error]
+val show_error : [<error] -> string
